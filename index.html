@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema Bancario / Créditos CLP</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --panel: #1e293b;
+            --accent: #2563eb;
+            --accent-hover: #1d4ed8;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #334155;
+            --danger: #ef4444;
+            --success: #22c55e;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+        }
+
+        h1, h2, h3 { text-align: center; }
+
+        .main-nav {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        button {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        button:hover { background-color: var(--accent-hover); }
+        button.danger { background-color: var(--danger); }
+        button.success { background-color: var(--success); }
+
+        .view {
+            display: none;
+            background: var(--panel);
+            padding: 25px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            margin-bottom: 20px;
+        }
+
+        .view.active { display: block; }
+
+        .form-group {
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            margin-bottom: 5px;
+            color: var(--text-muted);
+        }
+
+        input, select, textarea {
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+            background: #0f172a;
+            color: var(--text);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th, td {
+            border: 1px solid var(--border);
+            padding: 10px;
+            text-align: left;
+        }
+
+        th { background-color: #0f172a; }
+
+        .admin-nav {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 15px;
+        }
+
+        .card {
+            background: #0f172a;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Portal Bancario (Créditos CLP)</h1>
+
+    <!-- Navegación Principal -->
+    <div class="main-nav">
+        <button onclick="switchView('view-login-user')">Usuario</button>
+        <button onclick="switchView('view-peticiones')">Peticiones en Línea</button>
+        <button onclick="switchView('view-login-admin')">Administrador</button>
+    </div>
+
+    <!-- 1. LOGIN USUARIO -->
+    <div id="view-login-user" class="view active">
+        <h2>Acceso de Usuario</h2>
+        <div class="form-group">
+            <label>ID o Nombre de Usuario</label>
+            <input type="text" id="user-id-input">
+        </div>
+        <div class="form-group">
+            <label>Clave</label>
+            <input type="password" id="user-pass-input">
+        </div>
+        <button onclick="loginUser()">Ingresar</button>
+    </div>
+
+    <!-- DASHBOARD USUARIO -->
+    <div id="view-dashboard-user" class="view">
+        <h2>Bienvenido, <span id="user-display-name"></span></h2>
+        <button onclick="logout()" style="float: right;">Cerrar Sesión</button>
+        
+        <h3>Tus Deudas Activas</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Concepto</th>
+                    <th>Monto Inicial</th>
+                    <th>Deuda Actual (Intereses inc.)</th>
+                    <th>Fecha Vencimiento</th>
+                </tr>
+            </thead>
+            <tbody id="user-debts-list"></tbody>
+        </table>
+
+        <h3>Historial de Pagos</h3>
+        <ul id="user-payments-list"></ul>
+
+        <h3>Historial de Préstamos</h3>
+        <ul id="user-loans-list"></ul>
+    </div>
+
+    <!-- 2. PETICIONES EN LINEA -->
+    <div id="view-peticiones" class="view">
+        <h2>Peticiones en Línea</h2>
+        <div class="main-nav">
+            <button onclick="showPeticionTab('registro')">Solicitar Registro</button>
+            <button onclick="showPeticionTab('prestamo')">Solicitar Préstamo</button>
+        </div>
+
+        <!-- Formulario Registro -->
+        <div id="pet-registro-tab">
+            <h3>Nueva Solicitud de Registro</h3>
+            <div class="form-group">
+                <label>Nombre de Usuario deseado</label>
+                <input type="text" id="req-reg-name">
+            </div>
+            <div class="form-group">
+                <label>Clave</label>
+                <input type="password" id="req-reg-pass">
+            </div>
+            <button onclick="submitRegistroReq()">Enviar Solicitud</button>
+        </div>
+
+        <!-- Formulario Préstamo -->
+        <div id="pet-prestamo-tab" style="display: none;">
+            <h3>Solicitar Préstamo Online</h3>
+            <div class="form-group">
+                <label>ID de Usuario</label>
+                <input type="text" id="req-loan-id">
+            </div>
+            <div class="form-group">
+                <label>Clave</label>
+                <input type="password" id="req-loan-pass">
+            </div>
+            <div class="form-group">
+                <label>Monto a solicitar (CLP)</label>
+                <input type="number" id="req-loan-amount">
+            </div>
+            <div class="form-group">
+                <label>Motivo</label>
+                <textarea id="req-loan-reason"></textarea>
+            </div>
+            <div class="form-group">
+                <label>¿Cuándo pretende pagarlo?</label>
+                <input type="date" id="req-loan-date">
+            </div>
+            <button onclick="submitPrestamoReq()">Enviar Solicitud de Préstamo</button>
+        </div>
+    </div>
+
+    <!-- 3. LOGIN ADMIN -->
+    <div id="view-login-admin" class="view">
+        <h2>Acceso Administración</h2>
+        <div class="form-group">
+            <label>Clave Administrativa</label>
+            <input type="password" id="admin-pass-input">
+        </div>
+        <button onclick="loginAdmin()">Ingresar como Admin</button>
+    </div>
+
+    <!-- DASHBOARD ADMIN -->
+    <div id="view-dashboard-admin" class="view">
+        <h2>Panel de Control Admin</h2>
+        <div class="admin-nav">
+            <button onclick="showAdminTab('admin-users')">Usuarios</button>
+            <button onclick="showAdminTab('admin-deudores')">Deudores</button>
+            <button onclick="showAdminTab('admin-crear-prestamo')">Crear Préstamo</button>
+            <button onclick="showAdminTab('admin-peticiones')">Peticiones</button>
+            <button onclick="showAdminTab('admin-acciones')">Acciones/Inversiones</button>
+        </div>
+
+        <!-- Tab Usuarios -->
+        <div id="admin-users" class="admin-tab">
+            <h3>Usuarios Registrados</h3>
+            <div id="admin-users-list"></div>
+        </div>
+
+        <!-- Tab Deudores -->
+        <div id="admin-deudores" class="admin-tab" style="display:none;">
+            <h3>Lista de Deudores (Con Interés Compuesto del 20% cada 2 días)</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Usuario</th>
+                        <th>Monto Original</th>
+                        <th>Monto Actual (CLP)</th>
+                        <th>Fecha Vencimiento</th>
+                        <th>Estado Interés</th>
+                    </tr>
+                </thead>
+                <tbody id="admin-deudores-list"></tbody>
+            </table>
+        </div>
+
+        <!-- Tab Crear Préstamo -->
+        <div id="admin-crear-prestamo" class="admin-tab" style="display:none;">
+            <h3>Asignar Nuevo Préstamo</h3>
+            <div class="form-group">
+                <label>ID Usuario</label>
+                <input type="text" id="adm-loan-userid">
+            </div>
+            <div class="form-group">
+                <label>Monto (CLP)</label>
+                <input type="number" id="adm-loan-amount">
+            </div>
+            <div class="form-group">
+                <label>Fecha del Préstamo</label>
+                <input type="date" id="adm-loan-date">
+            </div>
+            <div class="form-group">
+                <label>Plazo / Fecha Vencimiento</label>
+                <input type="date" id="adm-loan-duedate">
+            </div>
+            <button onclick="adminCrearPrestamoDirecto()">Crear Préstamo</button>
+        </div>
+
+        <!-- Tab Peticiones -->
+        <div id="admin-peticiones" class="admin-tab" style="display:none;">
+            <h3>Peticiones Pendientes</h3>
+            <div id="admin-peticiones-list"></div>
+        </div>
+
+        <!-- Tab Acciones -->
+        <div id="admin-acciones" class="admin-tab" style="display:none;">
+            <h3>Inversiones / Acciones</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Proyecto/Inversión</th>
+                        <th>Invertido (CLP)</th>
+                        <th>Acordado a Recibir (CLP)</th>
+                        <th>Fecha Retorno</th>
+                    </tr>
+                </thead>
+                <tbody id="admin-acciones-list"></tbody>
+            </table>
+
+            <h3>Crear Nueva Inversión/Acción</h3>
+            <div class="form-group">
+                <label>Nombre de la Inversión/Proyecto</label>
+                <input type="text" id="act-name">
+            </div>
+            <div class="form-group">
+                <label>Monto Invertido (CLP)</label>
+                <input type="number" id="act-invested">
+            </div>
+            <div class="form-group">
+                <label>Monto Acordado a Recibir (CLP)</label>
+                <input type="number" id="act-expected">
+            </div>
+            <div class="form-group">
+                <label>Fecha Acordada</label>
+                <input type="date" id="act-date">
+            </div>
+            <button onclick="adminCrearAccion()">Registrar Inversión</button>
+        </div>
+    </div>
+</div>
+
+<script src="datos.js"></script>
+<script src="main.js"></script>
+</body>
+</html>
